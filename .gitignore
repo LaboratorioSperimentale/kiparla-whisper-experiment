@@ -1,2 +1,10 @@
 data/
 output/
+kiparla-scripting.code-workspace
+.venv/
+annotators_input/
+new_output/
+output_srts/
+
+
+*.pyc
