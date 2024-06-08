@@ -1,2 +1,3 @@
-pympi-ling
 speach
+tqdm
+whisper-timestamped

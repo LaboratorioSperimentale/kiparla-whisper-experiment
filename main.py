@@ -27,6 +27,13 @@ def _produce_srt(args):
 	output_folder = Path(args.output_dir)
 	transcribe.produce_srt(input_files, words_files, output_folder)
 
+
+def _convert_eaf(args):
+	input_files = list(Path(args.input_dir).glob("*.eaf"))
+
+	output_folder = Path(args.output_dir)
+	transcribe.convert_eaf(input_files, output_folder)
+
 if __name__ == "__main__":
 
 	parent_parser = argparse.ArgumentParser(add_help=False)
@@ -63,6 +70,13 @@ if __name__ == "__main__":
 	parser_produce.add_argument("-i", "--input-dir", default="annotators_input",
 							 	help="folder containing text documents annotated with speaker on first column")
 	parser_produce.set_defaults(func=_produce_srt)
+
+	parser_convert = subparsers.add_parser("convert-eaf", parents=[parent_parser],
+										  description='convert eaf to csv',
+										  help='convert eaf to csv')
+	parser_convert.add_argument("-i", "--input-dir")
+	parser_convert.add_argument("-o", "--output-dir")
+	parser_convert.set_defaults(func=_convert_eaf)
 
 	args = root_parser.parse_args()
 
