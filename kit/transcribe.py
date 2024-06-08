@@ -48,11 +48,13 @@ def create_input(input_files, output_folder):
 def produce_srt(input_files, words_files, output_folder):
 
 	for filename in input_files:
-		stem = filename.stem
+		print(filename)
+		stem = filename.stem[:-5]
 		words_file = ""
 
 		for word_filename in words_files:
-			stem_word = word_filename.stem
+			stem_word = word_filename.stem[:-6]
+
 			if stem_word == stem:
 				words_file = word_filename
 
@@ -65,8 +67,9 @@ def produce_srt(input_files, words_files, output_folder):
 		speaker = ""
 
 		with open(filename, encoding="utf-8") as fin:
-			for line in fin:
+			for lineno, line in enumerate(fin):
 				linesplit = line.split("\t")
+				print(linesplit)
 				curr_speaker, text = linesplit
 				segmented_text = text.strip().split(" ")
 
@@ -102,7 +105,7 @@ def produce_srt(input_files, words_files, output_folder):
 			# 		print(word, file=fout)
 			# 		print("", file=fout)
 
-			with open(output_folder.joinpath(f"Pasti_A_turns_speaker{speaker}.srt"),
+			with open(output_folder.joinpath(f"{stem}_turns_speaker{speaker}.srt"),
 			 		"w", encoding="utf-8") as fout:
 				for sp, text, begin, end in turns:
 					if sp == speaker:

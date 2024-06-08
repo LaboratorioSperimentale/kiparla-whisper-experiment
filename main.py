@@ -19,8 +19,11 @@ def _create_input(args):
 
 
 def _produce_srt(args):
-	input_files = Path(args.input_dir).glob("*.text.txt")
-	words_files = Path(args.words_dir).glob("*.words.json")
+	input_files = list(Path(args.input_dir).glob("*.text.txt"))
+	words_files = list(Path(args.input_dir).glob("*.words.json"))
+
+	print(input_files)
+	print(words_files)
 	output_folder = Path(args.output_dir)
 	transcribe.produce_srt(input_files, words_files, output_folder)
 

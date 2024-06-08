@@ -5,6 +5,8 @@ kiparla-scripting.code-workspace
 annotators_input/
 new_output/
 output_srts/
-
+experiments*
+annotators*
+output*
 
 *.pyc
