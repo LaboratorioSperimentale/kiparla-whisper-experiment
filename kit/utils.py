@@ -1,25 +1,25 @@
 import re
 
 
-#------ , Intonazione debolmente ascendente
-# cia- Parola interrotta
-#------ ? Intonazione ascendente
-#------ >ciao< Pronuncia più rapida
-#------ . Intonazione discendente
-#------ <ciao> Pronuncia più lenta
-#------ : Suono prolungato
-#------ [ciao] Sovrapposizione tra parlanti
-#------ (.) Pausa breve
-# (ciao) sequenza di difficile comprensione (ipotesi del trascrittore)
-#------ = Unità legate prosodicamente
-#------ xxx sequenza non comprensibile (idealmente, ad ogni x corrisponde una sillaba)
-#------ °ciao° Volume più basso
+#TENERE------ , Intonazione debolmente ascendente
+#TENERE------ >ciao< Pronuncia più rapida
+#TENERE------ . Intonazione discendente
+#TENERE------ <ciao> Pronuncia più lenta
+#TENERE------ : Suono prolungato
+#TENERE------ [ciao] Sovrapposizione tra parlanti
+#TENERE------ (.) Pausa breve
+
 # ((ride)) Comportamento non verbale
-#------ CIAO Volume più alto
+# (ciao) sequenza di difficile comprensione (ipotesi del trascrittore)
+
+#TENERE------ = Unità legate prosodicamente
+#TENERE------ xxx sequenza non comprensibile (idealmente, ad ogni x corrisponde una sillaba)
+#TENERE------ °ciao° Volume più basso
+#TENERE------ CIAO Volume più alto
 
 def get_ortographic(text):
 
-	symbols = [",", ".", ":", "<", ">", "[", "]", "°", "(", ")"]
+	symbols = [",", ".", ":", "<", ">", "[", "]", "°", "(", ")", "#"]
 	# print(text)
 	text = text.lower()
 	# print(text)
@@ -37,3 +37,13 @@ def get_ortographic(text):
 	# print(text)
 
 	# input()
+
+def simplify_json(text):
+	text = re.sub(r" ?\(\.\) ?", " @@@ ", text, count=10)
+	text = re.sub(r" ?\(\([^\)]*\)\) ?", " ", text, count=10)
+	text = text.replace("(", "")
+	text = text.replace(")", "")
+	text = re.sub(r" @@@ ", " (.) ", text, count=10)
+
+	return text
+

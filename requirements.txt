@@ -1,3 +1,4 @@
 speach
 tqdm
 whisper-timestamped
+sequence_align

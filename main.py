@@ -1,9 +1,11 @@
 import argparse
+import csv
 from pathlib import Path
 
 import tqdm
 
 import kit.transcribe as transcribe
+import kit.stats as stats
 
 def _transcribe_data(args):
 	input_files = Path(args.input_dir).glob("*.wav")
@@ -33,6 +35,44 @@ def _convert_eaf(args):
 
 	output_folder = Path(args.output_dir)
 	transcribe.convert_eaf(input_files, output_folder)
+
+
+def _count_tokens(args):
+
+	input_files = list(Path(args.input_dir).glob("*.csv"))
+	output_fname = Path(args.output_fname)
+
+	participant_timestamps = args.timestamps
+
+	stats.count_tokens(participant_timestamps, input_files, output_fname)
+
+
+def _count_tokens_per_minute(args):
+
+	input_files = list(Path(args.input_dir).glob("*.csv"))
+	output_fname = Path(args.output_fname)
+
+
+	stats.count_tokens_per_minute(input_files, output_fname)
+
+
+def _verticalize(args):
+
+	stats.verticalize(Path(args.input_fname), Path(args.output_fname), args.key)
+
+
+def _verticalize_batch(args):
+
+	input_files = list(Path(args.input_dir).glob("*.csv"))
+	output_folder = Path(args.output_dir)
+
+	stats.verticalize_batch(input_files, output_folder, args.key)
+
+
+def _align(args):
+	pass
+
+
 
 if __name__ == "__main__":
 
@@ -77,6 +117,47 @@ if __name__ == "__main__":
 	parser_convert.add_argument("-i", "--input-dir")
 	parser_convert.add_argument("-o", "--output-dir")
 	parser_convert.set_defaults(func=_convert_eaf)
+
+	parser_tokens = subparsers.add_parser("count-tokens", parents=[parent_parser],
+									   	  description='count number of transcribed tokens',
+										  help='count number of transcribed tokens')
+	parser_tokens.add_argument("-t", "--timestamps", help="path to csv file containing transcription times")
+	parser_tokens.add_argument("-i", "--input-dir", help="path to dir containing input files")
+	parser_tokens.add_argument("-o", "--output-fname", help="path to file for saving output")
+	parser_tokens.set_defaults(func=_count_tokens)
+
+	parser_tokens = subparsers.add_parser("count-tokens-perminute", parents=[parent_parser],
+									   	  description='count number of transcribed tokens per minute',
+										  help='count number of transcribed tokens per minute')
+	parser_tokens.add_argument("-i", "--input-dir", help="path to dir containing input files")
+	parser_tokens.add_argument("-o", "--output-fname", help="path to file for saving output")
+	parser_tokens.set_defaults(func=_count_tokens_per_minute)
+
+	parser_verticalize = subparsers.add_parser("verticalize", parents=[parent_parser],
+											help="verticalize ortographic transcription",
+											description="verticalize ortographic transcription")
+	parser_verticalize.add_argument("-i", "--input-fname")
+	parser_verticalize.add_argument("-o", "--output-fname")
+	parser_verticalize.add_argument("--key", choices=["ortographic-text", "jefferson-text"])
+	parser_verticalize.set_defaults(func=_verticalize)
+
+	parser_verticalizeb = subparsers.add_parser("verticalize-batch", parents=[parent_parser],
+											help="verticalize ortographic transcription",
+											description="verticalize ortographic transcription")
+	parser_verticalizeb.add_argument("-i", "--input-dir")
+	parser_verticalizeb.add_argument("-o", "--output-dir")
+	parser_verticalizeb.add_argument("--key", choices=["ortographic-text", "jefferson-text"])
+	parser_verticalizeb.set_defaults(func=_verticalize_batch)
+
+	parser_align = subparsers.add_parser("align", parents=[parent_parser],
+									  help="compute alignments between verticalized files",
+									  description="compute alignments between verticalized files")
+	parser_align.add_argument("--input-dir-1", help="input dir phase 1")
+	parser_align.add_argument("--input-dir-2", help="input dir phase 2")
+	parser_align.add_argument("--whisper-dir")
+	parser_align.add_argument("--transcription-times-1")
+	parser_align.add_argument("--transcription-times-2")
+	parser_align.set_defaults(func=_align)
 
 	args = root_parser.parse_args()
 
