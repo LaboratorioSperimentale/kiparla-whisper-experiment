@@ -1,6 +1,9 @@
 import csv
+import json
+import itertools
 
 import kit.utils as u
+import kit.alignment as alignment
 
 def count_tokens(participant_timestamps, input_files, output_fname):
 
@@ -144,6 +147,8 @@ def verticalize(f_input, f_output, key):
 		header = reader.__next__()
 		# header = [x.strip() for x in header]
 
+		ui_num = 1
+
 		for row in reader:
 			d = dict(zip(header, row))
 			# print(d)
@@ -159,7 +164,9 @@ def verticalize(f_input, f_output, key):
 				# input()
 
 			for word in text:
-				print(f"{speaker}\t{start}\t{end}\t{word}", file=fout)
+				if len(word.strip()) > 0:
+					print(f"{speaker}\t{ui_num}\t{start}\t{end}\t{word}", file=fout)
+			ui_num += 1
 			# input()
 
 
@@ -170,3 +177,65 @@ def verticalize_batch(files_input, output_folder, key):
 		output_fname = output_folder.joinpath(f"{basename}.vert.csv")
 
 		verticalize(filename, output_fname, key)
+
+
+def verticalize_whisper(files_input, output_folder):
+
+	for filename in files_input:
+		basename = filename.stem
+		output_fname = output_folder.joinpath(f"{basename}.vert.csv")
+
+		fout = open(output_fname, "w")
+
+		data = json.load(open(filename))
+
+		segments = data["segments"]
+		ui_num = 1
+		speaker = "S1"
+		for segment in segments:
+			words = segment["words"]
+			# text.append(" ".join(x.strip(".,?!").lower() for x in text_string))
+			for w in words:
+				w_text = w["text"].strip(".,!").lower()
+				w_start = w["start"]
+				w_end = w["end"]
+
+				if len(w_text.strip()) > 0:
+					print(f"{speaker}\t{ui_num}\t{w_start}\t{w_end}\t{w_text}", file=fout)
+			ui_num += 1
+
+
+def align(times, files, output_folder):
+
+	scores = {}
+
+	for conv in files:
+		# print(files[conv])
+		workers = [(x, y) for x, y in files[conv]]
+		# print(conv, workers)
+
+		for X, Y in itertools.combinations(workers, 2):
+			# print(X, Y)
+			t4_X = float(times[X]["T4"])
+			t4_Y = float(times[Y]["T4"])
+			cutoff = min(t4_X, t4_Y)
+
+			text_X = u.load(files[conv][X], cutoff)
+			text_Y = u.load(files[conv][Y], cutoff)
+
+			aligned_X, aligned_Y, score_seq, tot_score = alignment.align(text_X, text_Y)
+
+			if not X[0] in scores:
+				scores[X[0]] = {}
+			scores[X[0]][Y[0]] = (tot_score, len(score_seq), conv)
+
+			with open(output_folder.joinpath(f"worker{X[0]}_worker{Y[0]}.csv"), "w") as fout:
+				print(f"{X[0]}\t{Y[0]}\tmatch", file=fout)
+				for x, y, z in zip(aligned_X, aligned_Y, score_seq):
+					print (f"{x}\t{y}\t{z}", file=fout)
+
+	with open(output_folder.joinpath("scores.csv"), "w") as fout:
+		print("worker1\tworker2\tscore\tn_tokens\tconversation", file=fout)
+		for X in scores:
+			for Y in scores[X]:
+				print(f"{X}\t{Y}\t{scores[X][Y][0]:.3f}\t{scores[X][Y][1]}\t{scores[X][Y][2]}", file=fout)

@@ -1,46 +1,88 @@
-# Or use strings, lists, etc
-seq1, seq2 = "ciao come stai io sono Ludovica Pannitto", "ciao come stai ? io mi chiamo Ludovica"
-seq1, seq2 = seq1.split(), seq2.split()
+import collections
 
 from sequence_align.pairwise import hirschberg, needleman_wunsch
 
-
-# See https://en.wikipedia.org/wiki/Needleman%E2%80%93Wunsch_algorithm#/media/File:Needleman-Wunsch_pairwise_sequence_alignment.png
-# Use Needleman-Wunsch default scores (match=1, mismatch=-1, indel=-1)
-seq_a = seq1
-seq_b = seq2
-
-aligned_seq_a, aligned_seq_b = needleman_wunsch(
-    seq_a,
-    seq_b,
-    match_score=1.0,
-    mismatch_score=-1.0,
-    indel_score=-1.0,
-    gap="_",
-)
-
-# Expects ["G", "_", "A", "T", "T", "A", "C", "A"]
-print(aligned_seq_a)
-
-# Expects ["G", "C", "A", "_", "T", "G", "C", "G"]
-print(aligned_seq_b)
+import kit.lis as lis
 
 
-# See https://en.wikipedia.org/wiki/Hirschberg%27s_algorithm#Example
-# seq_a = ["A", "G", "T", "A", "C", "G", "C", "A"]
-# seq_b = ["T", "A", "T", "G", "C"]
+def find_matching_subsequence(text1, text2):
 
-aligned_seq_a, aligned_seq_b = hirschberg(
-    seq_a,
-    seq_b,
-    match_score=2.0,
-    mismatch_score=-1.0,
-    indel_score=-2.0,
-    gap="_",
-)
+	text1_fqdist = collections.defaultdict(int)
+	text2_fqdist = collections.defaultdict(int)
 
-# Expects ["A", "G", "T", "A", "C", "G", "C", "A"]
-print(aligned_seq_a)
+	for w in text1:
+		text1_fqdist[w]+=1
+	for w in text2:
+		text2_fqdist[w]+=1
 
-# Expects ["_", "_", "T", "A", "T", "G", "C", "_"]
-print(aligned_seq_b)
+	text1_fingerprint = []
+	text2_fingerprint = []
+	for i, w in enumerate(text1):
+		if text1_fqdist[w] == 1:
+			text1_fingerprint.append((i, w))
+	for i, w in enumerate(text2):
+		if text2_fqdist[w] == 1:
+			text2_fingerprint.append((i, w))
+
+
+	allineamento = {}
+	allineamento_rev = {}
+	for i, w1 in text1_fingerprint:
+		found = -1
+		for j, w2 in text2_fingerprint:
+			if w1 == w2:
+				found = j
+				break
+		if found > -1:
+			allineamento[i] = found
+			allineamento_rev[found] = i
+
+	ys = [y for x, y in allineamento.items()]
+	len_lis, seq_lis = lis.lis(ys)
+	seq_lis = list(seq_lis)
+
+	i=0
+
+	indexes_1 = []
+	indexes_2 = []
+	for i_1, i_2 in allineamento.items():
+		if i_2 == seq_lis[i]:
+			indexes_1.append(i_1)
+			indexes_2.append(i_2)
+			i+=1
+
+	offsets_1 = [indexes_1[0]]
+	offsets_2 = [indexes_2[0]]
+
+	for i, j in zip(indexes_1, indexes_2):
+		if i>offsets_1[-1]+5 and j>offsets_2[-1]+5:
+			offsets_1.append(i)
+			offsets_2.append(j)
+
+	print(allineamento)
+	print(offsets_1)
+	print(offsets_2)
+
+def align(seq_a, seq_b, match_score=1, mismatch_score=-1, indel_score=-0.5):
+
+    aligned_seq_a, aligned_seq_b = needleman_wunsch(
+        seq_a,
+        seq_b,
+        match_score=1.0,
+        mismatch_score=-1.0,
+        indel_score=-1.0,
+        gap="_",
+    )
+
+    score_seq = []
+    for x, y in zip(aligned_seq_a, aligned_seq_b):
+        if x == y:
+            score_seq.append(0)
+        elif x == "_" or y == "_":
+            score_seq.append(0.5)
+        else:
+            score_seq.append(1)
+
+    tot_score = sum(score_seq)/len(score_seq)
+
+    return aligned_seq_a, aligned_seq_b, score_seq, tot_score

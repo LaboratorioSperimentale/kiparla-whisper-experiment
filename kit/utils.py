@@ -47,3 +47,13 @@ def simplify_json(text):
 
 	return text
 
+
+def load(filename, cutoff_threshold):
+	ret = []
+	with open(filename) as fin:
+		for line in fin:
+			line = line.strip().split("\t")
+			if float(line[3])<=cutoff_threshold:
+				ret.append(line[-1])
+
+	return ret

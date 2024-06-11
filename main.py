@@ -69,8 +69,54 @@ def _verticalize_batch(args):
 	stats.verticalize_batch(input_files, output_folder, args.key)
 
 
+def _verticalize_whisper(args):
+	input_files = list(Path(args.input_dir).glob("*.json"))
+	output_folder = Path(args.output_dir)
+
+	stats.verticalize_whisper(input_files, output_folder)
+
+
 def _align(args):
-	pass
+
+	times = {}
+	times[("whisper", "2")] = {"T4":100000}
+	with open(args.transcription_times_1, newline='') as csvfile:
+		reader = csv.reader(csvfile, delimiter=',', quotechar='"')
+		header = reader.__next__()
+		header = [x.strip() for x in header]
+		for row in reader:
+			d = dict(zip(header, row))
+			times[(d["Code"].strip(), d["Phase"].strip())] = d
+
+	with open(args.transcription_times_2, newline='') as csvfile:
+		reader = csv.reader(csvfile, delimiter=',', quotechar='"')
+		header = reader.__next__()
+		header = [x.strip() for x in header]
+		for row in reader:
+			d = dict(zip(header, row))
+			times[(d["Code"].strip(), d["Phase"].strip())] = d
+
+	files_phase_1 = Path(args.input_dir_1).glob("*.csv")
+	files_phase_2 = Path(args.input_dir_2).glob("*.csv")
+	files_whisper = Path(args.whisper_dir).glob("*.csv")
+
+	files = {}
+	for filename in files_phase_1:
+		basename = filename.stem.split(".")[0]
+		conv, worker = basename.split("_")[0], basename.split("_")[-1][-1]
+		if not conv in files:
+			files[conv] = {}
+		files[conv][worker, "1"] = filename
+	for filename in files_phase_2:
+		basename = filename.stem.split(".")[0]
+		conv, worker = basename.split("_")[0], basename.split("_")[-1][-1]
+		files[conv][worker, "2"] = filename
+	for filename in files_whisper:
+		conv = filename.stem.split(".")[0]
+		files[conv]["whisper", "2"] = filename
+
+	stats.align(times, files, Path(args.output_dir))
+
 
 
 
@@ -133,21 +179,30 @@ if __name__ == "__main__":
 	parser_tokens.add_argument("-o", "--output-fname", help="path to file for saving output")
 	parser_tokens.set_defaults(func=_count_tokens_per_minute)
 
-	parser_verticalize = subparsers.add_parser("verticalize", parents=[parent_parser],
-											help="verticalize ortographic transcription",
-											description="verticalize ortographic transcription")
-	parser_verticalize.add_argument("-i", "--input-fname")
-	parser_verticalize.add_argument("-o", "--output-fname")
-	parser_verticalize.add_argument("--key", choices=["ortographic-text", "jefferson-text"])
-	parser_verticalize.set_defaults(func=_verticalize)
+	# parser_verticalize = subparsers.add_parser("verticalize", parents=[parent_parser],
+	# 										help="verticalize transcription",
+	# 										description="verticalize transcription")
+	# parser_verticalize.add_argument("-i", "--input-fname")
+	# parser_verticalize.add_argument("-o", "--output-fname")
+	# parser_verticalize.add_argument("--key", choices=["ortographic-text", "jefferson-text"])
+	# parser_verticalize.set_defaults(func=_verticalize)
 
 	parser_verticalizeb = subparsers.add_parser("verticalize-batch", parents=[parent_parser],
-											help="verticalize ortographic transcription",
-											description="verticalize ortographic transcription")
+											help="verticalize transcription",
+											description="verticalize transcription")
 	parser_verticalizeb.add_argument("-i", "--input-dir")
 	parser_verticalizeb.add_argument("-o", "--output-dir")
-	parser_verticalizeb.add_argument("--key", choices=["ortographic-text", "jefferson-text"])
+	parser_verticalizeb.add_argument("--key", choices=["ortographic-text", "jefferson-text"],
+								  default="ortopgraphic-text")
 	parser_verticalizeb.set_defaults(func=_verticalize_batch)
+
+	parser_verticalizew = subparsers.add_parser("verticalize-batch-whisper", parents=[parent_parser],
+											help="verticalize whisper transcription",
+											description="verticalize whisper transcription")
+	parser_verticalizew.add_argument("-i", "--input-dir")
+	parser_verticalizew.add_argument("-o", "--output-dir")
+	parser_verticalizew.set_defaults(func=_verticalize_whisper)
+
 
 	parser_align = subparsers.add_parser("align", parents=[parent_parser],
 									  help="compute alignments between verticalized files",
@@ -157,6 +212,7 @@ if __name__ == "__main__":
 	parser_align.add_argument("--whisper-dir")
 	parser_align.add_argument("--transcription-times-1")
 	parser_align.add_argument("--transcription-times-2")
+	parser_align.add_argument("-o", "--output-dir")
 	parser_align.set_defaults(func=_align)
 
 	args = root_parser.parse_args()

@@ -9,4 +9,6 @@ experiments*
 annotators*
 output*
 
+*__pycache__*
+
 *.pyc
